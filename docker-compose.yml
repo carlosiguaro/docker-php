@@ -1,0 +1,73 @@
+version: "3.2"
+
+networks:
+  frontend:
+  backend:
+
+services:
+
+  apache:
+    build:
+      context: './apache/'
+    container_name: apache_exp
+    ports:
+      - "8087:80"
+    volumes:
+      - ${PROJECT_ROOT}:/var/www/html/
+    depends_on:
+      - php
+      - mysql
+    links:
+      - mysql
+    networks:
+      - frontend
+      - backend
+
+  php:
+    build:
+      context: './php/'
+    container_name: php_exp
+    volumes:
+      - ${PROJECT_ROOT}:/var/www/html/:delegated
+    ports:
+      - "9000:9000"
+    links:
+     - mysql
+    networks:
+      - backend
+
+  mysql:
+    image: mysql:5.7.29
+    container_name: mysql_exp
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "4306:3306"
+    environment:
+      MYSQL_DATABASE: "${DB_NAME}"
+      MYSQL_USER: "${DB_USERNAME}"
+      MYSQL_PASSWORD: "${DB_PASSWORD}"
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}"
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    networks:
+      - backend
+
+  phpmyadmin:
+    depends_on:
+      - mysql
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin_exp
+    restart: always
+    ports:
+      - '8088:80'
+    environment:
+      PMA_HOST: mysql
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}"
+      UPLOAD_LIMIT: 1100M
+      MAX_EXECUTION_TIME: 3600
+    networks:
+      - backend
+  
+volumes:
+    data:
